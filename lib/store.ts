@@ -64,48 +64,101 @@ const createStandardPipeline = (data: OnboardingData): Pipeline => {
             {
                 id: "step_cnn",
                 title: "Certificado No Naturalización",
-                description: "Tramitar el CNE o CNN ante la cámara electoral.",
+                description: "Tramitar el Certificado de la Cámara Nacional Electoral (CNE) que acredita que el AVO no se naturalizó argentino.",
                 order: 2,
                 status: "pending",
                 dependencies: ["step_recollection"],
                 metadata: {},
-                documents: [],
+                documents: [
+                    {
+                        id: "doc_cnn",
+                        name: "Certificado CNE (F003)",
+                        type: "criminal_record", // Using closest type for now or 'other'
+                        country: "Argentina",
+                        isMandatory: true,
+                        validations: [],
+                        description: "Documento digital firmado o respuesta oficial de la CNE."
+                    }
+                ],
                 instructions: [
                     {
                         id: "instr_cne_form",
-                        title: "Completar Formulario 003",
-                        content: "Debes ingresar al sitio de la Cámara Nacional Electoral y completar el formulario 003 (Solicitud de Certificado de No Ciudadano Argentino).\n\n**Requisitos:**\n- DNI digital\n- Acta de nacimiento del avo\n- Acta de defunción (si aplica)\n\n[Ir al sitio oficial](https://www.electoral.gob.ar/nuevo/index.php)",
-                        links: ["https://www.electoral.gob.ar"]
-                    },
-                    {
-                        id: "instr_pay_tax",
-                        title: "Pagar Arancel",
-                        content: "El trámite tiene un costo administrativo. Debes generar el VEP o boleta de pago en la misma plataforma.",
-                        links: []
+                        title: "Cómo tramitar el CNE",
+                        content: "1. Ingresa al sitio de la Cámara Nacional Electoral.\n2. Completa el formulario 003 (Solicitud de Certificado de No Ciudadano Argentino).\n3. Sube los escaneos del Acta de Nacimiento y Defunción del AVO.\n4. Paga el arancel correspondiente generardo el VEP.",
+                        links: ["https://www.electoral.gob.ar/nuevo/index.php"]
                     }
                 ]
             },
             {
                 id: "step_apostille",
-                title: "Apostillas",
-                description: "Apostillar todos los documentos no italianos.",
+                title: "Apostillas de la Haya",
+                description: "Legalizar internacionalmente todas las actas argentinas (Nacimiento, Matrimonio, Defunción, CNN).",
                 order: 3,
                 status: "blocked",
                 dependencies: ["step_cnn"],
                 metadata: {},
-                documents: [],
-                instructions: []
+                documents: [
+                    {
+                        id: "doc_apostille_avo_birth",
+                        name: "Apostilla - Nac. AVO",
+                        type: "apostille",
+                        country: "Argentina",
+                        isMandatory: false, // Could be true, but let's leave flexibility
+                        validations: [],
+                        description: "Apostilla vinculada al acta de nacimiento."
+                    },
+                    {
+                        id: "doc_apostille_cnn",
+                        name: "Apostilla - CNE",
+                        type: "apostille",
+                        country: "Argentina",
+                        isMandatory: true,
+                        validations: [],
+                        description: "Apostilla del certificado de no naturalización."
+                    }
+                ],
+                instructions: [
+                    {
+                        id: "instr_tad",
+                        title: "Trámite por TAD (Trámites a Distancia)",
+                        content: "La forma más común es vía TAD con Clave Fiscal Nivel 2+.\n\n1. Ingresa a TAD.\n2. Busca 'Apostilla de la Haya'.\n3. Inicia trámite y sube el PDF del documento a apostillar.\n4. Paga el VEP.\n\nLa demora suele ser de 30-45 días hábiles.",
+                        links: ["https://tramitesadistancia.gob.ar"]
+                    },
+                    {
+                        id: "instr_cn_notary",
+                        title: "Opción Colegio de Escribanos",
+                        content: "Si tienes urgencia, puedes ir al Colegio de Escribanos de tu provincia. Es más costoso pero sale en 24-48hs.",
+                        links: []
+                    }
+                ]
             },
             {
                 id: "step_translation",
-                title: "Traducciones",
-                description: "Traducción pública o matriculada de actas apostilladas.",
+                title: "Traducciones al Italiano",
+                description: "Todas las actas no italianas deben ser traducidas por Traductor Público Matriculado.",
                 order: 4,
                 status: "blocked",
                 dependencies: ["step_apostille"],
                 metadata: {},
-                documents: [],
-                instructions: []
+                documents: [
+                    {
+                        id: "doc_trans_avo_birth",
+                        name: "Traducción - Nac. AVO",
+                        type: "translation",
+                        country: "Italy",
+                        isMandatory: false,
+                        validations: [],
+                        description: "Traducción y asseverazione (si aplica) o Visto Consular."
+                    }
+                ],
+                instructions: [
+                    {
+                        id: "instr_translator",
+                        title: "Buscar Traductor",
+                        content: "Busca un traductor matriculado en el Colegio de Traductores. Debe firmar y sellar la traducción.\n\nLuego, esa firma se legaliza en el colegio de traductores (salvo que sea traducción digital con firma digital reconocida).",
+                        links: ["https://www.traductores.org.ar"]
+                    }
+                ]
             }
         ]
     };
