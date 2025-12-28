@@ -70,7 +70,20 @@ const createStandardPipeline = (data: OnboardingData): Pipeline => {
                 dependencies: ["step_recollection"],
                 metadata: {},
                 documents: [],
-                instructions: []
+                instructions: [
+                    {
+                        id: "instr_cne_form",
+                        title: "Completar Formulario 003",
+                        content: "Debes ingresar al sitio de la Cámara Nacional Electoral y completar el formulario 003 (Solicitud de Certificado de No Ciudadano Argentino).\n\n**Requisitos:**\n- DNI digital\n- Acta de nacimiento del avo\n- Acta de defunción (si aplica)\n\n[Ir al sitio oficial](https://www.electoral.gob.ar/nuevo/index.php)",
+                        links: ["https://www.electoral.gob.ar"]
+                    },
+                    {
+                        id: "instr_pay_tax",
+                        title: "Pagar Arancel",
+                        content: "El trámite tiene un costo administrativo. Debes generar el VEP o boleta de pago en la misma plataforma.",
+                        links: []
+                    }
+                ]
             },
             {
                 id: "step_apostille",
@@ -119,7 +132,54 @@ export const usePipelineStore = createStore<PipelineState>()(
                     );
                     return { pipeline: { ...state.pipeline, steps: newSteps } };
                 }),
-            updateDocumentStatus: () => { }, // TODO
+            updateDocumentStatus: (documentId, status) =>
+                set((state) => {
+                    if (!state.pipeline) return {};
+
+                    let pipelineUpdated = false;
+
+                    const newSteps = state.pipeline.steps.map(step => {
+                        const docIndex = step.documents.findIndex(d => d.id === documentId);
+                        if (docIndex === -1) return step; // Document not in this step
+
+                        // Update the document
+                        const newDocs = [...step.documents];
+                        // If status is a string (url), we treat it as attachmentUrl
+                        if (typeof status === 'string') {
+                            newDocs[docIndex] = { ...newDocs[docIndex], attachmentUrl: status };
+                        } else {
+                            // Fallback if we pass a complex object later
+                            newDocs[docIndex] = { ...newDocs[docIndex], ...status };
+                        }
+
+                        pipelineUpdated = true;
+
+                        // Check if step should be completed
+                        // Logic: All mandatory documents have an attachmentUrl
+                        const allMandatoryDone = newDocs.every(d => !d.isMandatory || !!d.attachmentUrl);
+
+                        // Auto-update step status if it was in_progress or pending
+                        let newStepStatus = step.status;
+                        if (allMandatoryDone && (step.status === 'in_progress' || step.status === 'pending')) {
+                            newStepStatus = 'completed';
+                        }
+
+                        return { ...step, documents: newDocs, status: newStepStatus };
+                    });
+
+                    if (!pipelineUpdated) return {};
+
+                    // If a step was completed, we might want to unblock the next one
+                    // This is a simple linear check.
+                    let stepsWithUnlock = [...newSteps];
+                    for (let i = 0; i < stepsWithUnlock.length - 1; i++) {
+                        if (stepsWithUnlock[i].status === 'completed' && stepsWithUnlock[i + 1].status === 'blocked') {
+                            stepsWithUnlock[i + 1] = { ...stepsWithUnlock[i + 1], status: 'pending' };
+                        }
+                    }
+
+                    return { pipeline: { ...state.pipeline, steps: stepsWithUnlock } };
+                }),
         }),
         { name: "pipeline-storage" }
     )

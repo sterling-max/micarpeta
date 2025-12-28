@@ -71,7 +71,7 @@ function PipelineStepCard({ step, index }: { step: any; index: number }) {
     const isCurrent = step.status === 'in_progress';
 
     return (
-        <Link href={`/dashboard/step/${step.id}`}>
+        <Link href={`/dashboard/step/${step.id}`} className="block w-full">
             <motion.div
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}

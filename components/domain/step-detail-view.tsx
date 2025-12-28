@@ -11,6 +11,7 @@ import { GlassCard } from "@/components/ui/glass-card";
 export function StepDetailView({ stepId }: { stepId: string }) {
     const router = useRouter();
     const pipeline = usePipeline((state) => state.pipeline);
+    const updateDocumentStatus = usePipeline((state) => state.updateDocumentStatus);
     // Also need an action to update document status, but store mock is simple for now.
 
     if (!pipeline) {
@@ -31,10 +32,14 @@ export function StepDetailView({ stepId }: { stepId: string }) {
 
     const handleUpload = (docId: string, file: File) => {
         // In a real app we would upload to S3/Server here.
-        // For now we just console log and maybe would toggle state if we had that action ready.
-        console.log(`Uploading ${file.name} for ${docId}`);
-        alert("Simulación: Archivo subido. En producción esto se guardaría en el servidor.");
-        // TODO: Call store action to update document status to 'uploaded'
+        // For now we simulate a URL.
+        const mockUrl = URL.createObjectURL(file);
+
+        // Update store
+        updateDocumentStatus(docId, mockUrl);
+
+        // Feedback
+        // console.log(`Uploaded ${file.name} for ${docId}`);
     };
 
     return (
@@ -73,6 +78,24 @@ export function StepDetailView({ stepId }: { stepId: string }) {
                 )}
             </GlassCard>
 
+            {/* Actions / Instructions List */}
+            {step.instructions && step.instructions.length > 0 && (
+                <div className="space-y-4">
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                        Acciones Requeridas
+                        <span className="text-xs font-normal bg-brand-100 dark:bg-brand-900 px-2 py-0.5 rounded-full text-brand-600 dark:text-brand-300">
+                            {step.instructions.length}
+                        </span>
+                    </h2>
+
+                    <div className="grid gap-3">
+                        {step.instructions.map((instr) => (
+                            <InstructionItem key={instr.id} instruction={instr} />
+                        ))}
+                    </div>
+                </div>
+            )}
+
             {/* Documents List */}
             <div className="space-y-4">
                 <h2 className="text-xl font-bold flex items-center gap-2">
@@ -83,7 +106,11 @@ export function StepDetailView({ stepId }: { stepId: string }) {
                 </h2>
 
                 {step.documents.length === 0 ? (
-                    <p className="text-slate-500 italic">No se requieren documentos para este paso.</p>
+                    <GlassCard className="text-center py-8">
+                        <p className="text-slate-500 italic mb-4">No se requieren documentos para este paso.</p>
+                        <p className="text-sm text-slate-400 mb-6">Si ya has completado las acciones requeridas, puedes marcar el paso como completado manualmente.</p>
+                        <Button variant="outline">Marcar como completado</Button>
+                    </GlassCard>
                 ) : (
                     step.documents.map((doc: DocumentRequirement) => (
                         <DocumentCard
@@ -96,5 +123,57 @@ export function StepDetailView({ stepId }: { stepId: string }) {
             </div>
 
         </div>
+    );
+}
+
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Instruction } from "@/types";
+import { Lightbulb, ExternalLink } from "lucide-react";
+
+function InstructionItem({ instruction }: { instruction: Instruction }) {
+    return (
+        <Dialog>
+            <DialogTrigger asChild>
+                <GlassCard className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer group transition-all">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                            <Lightbulb size={20} />
+                        </div>
+                        <div className="text-left">
+                            <h3 className="font-semibold text-slate-900 dark:text-slate-100">{instruction.title}</h3>
+                            <p className="text-xs text-slate-500">Ver instructivo</p>
+                        </div>
+                    </div>
+                    <Button size="sm" variant="ghost">Abrir</Button>
+                </GlassCard>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>{instruction.title}</DialogTitle>
+                </DialogHeader>
+                <div className="mt-4 space-y-4">
+                    <div className="prose dark:prose-invert text-sm max-w-none text-slate-600 dark:text-slate-300 whitespace-pre-line">
+                        {instruction.content}
+                    </div>
+
+                    {instruction.links && instruction.links.length > 0 && (
+                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                            <h4 className="text-xs font-bold uppercase text-slate-400 mb-2">Enlaces útiles</h4>
+                            {instruction.links.map((link, i) => (
+                                <a
+                                    key={i}
+                                    href={link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-2 text-brand-600 hover:underline text-sm"
+                                >
+                                    <ExternalLink size={14} /> {link}
+                                </a>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </DialogContent>
+        </Dialog>
     );
 }
