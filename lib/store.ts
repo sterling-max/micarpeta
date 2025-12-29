@@ -12,6 +12,7 @@ interface PipelineState {
     // Actions
     setPipeline: (pipeline: Pipeline) => void;
     generatePipeline: (data: OnboardingData) => void;
+    resetPipeline: () => void;
     updateStepStatus: (stepId: string, status: Step['status']) => void;
     updateDocumentStatus: (documentId: string, status: any) => void; // TODO: Define status type
 }
@@ -30,10 +31,8 @@ const createStandardPipeline = (data: OnboardingData): Pipeline => {
             {
                 id: "step_recollection",
                 title: "Recolección de Actas",
-                description: `Reunir actas de la línea de ${data.avoName}.`,
+                description: `Reunir actas de la línea de ${data.avoName}. Este es el paso más lento/difícil.`,
                 order: 1,
-                // If they already have the birth cert, we might consider this step partially advanced, 
-                // but for safety usually better to verify first. Let's keep in_progress.
                 status: "in_progress",
                 dependencies: [],
                 metadata: { avoName: data.avoName },
@@ -45,26 +44,38 @@ const createStandardPipeline = (data: OnboardingData): Pipeline => {
                         country: "Italy",
                         isMandatory: true,
                         validations: [],
-                        description: "Acta original solicitada a la comuna italiana.",
-                        // If they said they have it, we could mark it as uploaded or similar in future
+                        description: "Acta original en formato multilingüe o traducida.",
                         attachmentUrl: data.hasBirthCert ? "mock_url_placeholder" : undefined
                     },
                     {
                         id: "doc_avo_marriage",
                         name: `Acta de Matrimonio - ${data.avoName}`,
                         type: "marriage",
-                        country: "Argentina", // Default assumption, editable later
+                        country: "Argentina",
                         isMandatory: true,
                         validations: [],
-                        description: "Si se casó en el país de emigración."
+                        description: "Si no aparece, buscar en iglesias (Fe de Bautismo) como prueba."
                     }
                 ],
-                instructions: []
+                instructions: [
+                    {
+                        id: "instr_mail_comune",
+                        title: "Pedir el acta a Italia",
+                        content: "💡 **Consejo Real:** No llames por teléfono. Envía un email (mejor si es PEC) a la oficina de *Stato Civile* de la comuna.\n\nEscribe en italiano simple. Si no responden en 30 días, considera enviar carta postal o contratar un gestor local.",
+                        links: ["https://www.poste.it/prodotti/raccomandata-online.html"]
+                    },
+                    {
+                        id: "instr_find_doc",
+                        title: "🔍 ¿No sabes dónde buscar?",
+                        content: "Si no tienes datos precisos o la comuna no responde, te recomendamos contactar a un gestor especializado en búsqueda de actas.\n\n**Recomendación:** Puedes consultar con **Itadoc** (itadoc.it), son expertos en búsquedas difíciles y tienen equipo en Italia.",
+                        links: ["https://itadoc.it"]
+                    }
+                ]
             },
             {
                 id: "step_cnn",
                 title: "Certificado No Naturalización",
-                description: "Tramitar el Certificado de la Cámara Nacional Electoral (CNE) que acredita que el AVO no se naturalizó argentino.",
+                description: "El famoso F003 de la Cámara Nacional Electoral. Fundamental que no haya renunciado a la ciudadanía.",
                 order: 2,
                 status: "pending",
                 dependencies: ["step_recollection"],
@@ -73,18 +84,18 @@ const createStandardPipeline = (data: OnboardingData): Pipeline => {
                     {
                         id: "doc_cnn",
                         name: "Certificado CNE (F003)",
-                        type: "criminal_record", // Using closest type for now or 'other'
+                        type: "criminal_record",
                         country: "Argentina",
                         isMandatory: true,
                         validations: [],
-                        description: "Documento digital firmado o respuesta oficial de la CNE."
+                        description: "Digital con firma electrónica."
                     }
                 ],
                 instructions: [
                     {
-                        id: "instr_cne_form",
-                        title: "Cómo tramitar el CNE",
-                        content: "1. Ingresa al sitio de la Cámara Nacional Electoral.\n2. Completa el formulario 003 (Solicitud de Certificado de No Ciudadano Argentino).\n3. Sube los escaneos del Acta de Nacimiento y Defunción del AVO.\n4. Paga el arancel correspondiente generardo el VEP.",
+                        id: "instr_cne_variants",
+                        title: "⚠️ El truco de los Nombres",
+                        content: "**¡Muy Importante!** Al pedir el CNE, debes declarar TODAS las variantes de nombre del Avo que aparezcan en las actas argentinas (ej: Giuseppe, Jose, José, Joseph).\n\nSi no lo haces y luego aparece un acta con otro nombre, el CNE no servirá y deberás rectificarlo (pagando de nuevo y perdiendo tiempo).",
                         links: ["https://www.electoral.gob.ar/nuevo/index.php"]
                     }
                 ]
@@ -92,7 +103,7 @@ const createStandardPipeline = (data: OnboardingData): Pipeline => {
             {
                 id: "step_apostille",
                 title: "Apostillas de la Haya",
-                description: "Legalizar internacionalmente todas las actas argentinas (Nacimiento, Matrimonio, Defunción, CNN).",
+                description: "Validación internacional. Sin esto, tus documentos argentinos NO valen en el exterior.",
                 order: 3,
                 status: "blocked",
                 dependencies: ["step_cnn"],
@@ -103,9 +114,9 @@ const createStandardPipeline = (data: OnboardingData): Pipeline => {
                         name: "Apostilla - Nac. AVO",
                         type: "apostille",
                         country: "Argentina",
-                        isMandatory: false, // Could be true, but let's leave flexibility
+                        isMandatory: false,
                         validations: [],
-                        description: "Apostilla vinculada al acta de nacimiento."
+                        description: "Solo si el acta argentina es digital o firma ológrafa legalizada."
                     },
                     {
                         id: "doc_apostille_cnn",
@@ -114,28 +125,22 @@ const createStandardPipeline = (data: OnboardingData): Pipeline => {
                         country: "Argentina",
                         isMandatory: true,
                         validations: [],
-                        description: "Apostilla del certificado de no naturalización."
+                        description: "La apostilla debe estar vinculada al PDF del CNE."
                     }
                 ],
                 instructions: [
                     {
-                        id: "instr_tad",
-                        title: "Trámite por TAD (Trámites a Distancia)",
-                        content: "La forma más común es vía TAD con Clave Fiscal Nivel 2+.\n\n1. Ingresa a TAD.\n2. Busca 'Apostilla de la Haya'.\n3. Inicia trámite y sube el PDF del documento a apostillar.\n4. Paga el VEP.\n\nLa demora suele ser de 30-45 días hábiles.",
+                        id: "instr_tad_vs_college",
+                        title: "TAD vs Colegio de Escribanos",
+                        content: "Tienes dos caminios:\n\n1. **TAD (Trámites a Distancia):** Barato pero LENTO (30-60 días). Hazlo si tienes tiempo.\n2. **Colegio de Escribanos:** Caro pero RÁPIDO (A veces en el día). Úsalo si viajas pronto o si el documento tiene firma de hace muchos años que requiere validación extra.",
                         links: ["https://tramitesadistancia.gob.ar"]
-                    },
-                    {
-                        id: "instr_cn_notary",
-                        title: "Opción Colegio de Escribanos",
-                        content: "Si tienes urgencia, puedes ir al Colegio de Escribanos de tu provincia. Es más costoso pero sale en 24-48hs.",
-                        links: []
                     }
                 ]
             },
             {
                 id: "step_translation",
-                title: "Traducciones al Italiano",
-                description: "Todas las actas no italianas deben ser traducidas por Traductor Público Matriculado.",
+                title: "Traducciones",
+                description: "Aquí es donde muchos cometen error. Depende 100% de DÓNDE presentas la carpeta.",
                 order: 4,
                 status: "blocked",
                 dependencies: ["step_apostille"],
@@ -143,20 +148,20 @@ const createStandardPipeline = (data: OnboardingData): Pipeline => {
                 documents: [
                     {
                         id: "doc_trans_avo_birth",
-                        name: "Traducción - Nac. AVO",
+                        name: "Carpeta Traducida",
                         type: "translation",
                         country: "Italy",
-                        isMandatory: false,
+                        isMandatory: true,
                         validations: [],
-                        description: "Traducción y asseverazione (si aplica) o Visto Consular."
+                        description: "Juego completo de traducciones."
                     }
                 ],
                 instructions: [
                     {
-                        id: "instr_translator",
-                        title: "Buscar Traductor",
-                        content: "Busca un traductor matriculado en el Colegio de Traductores. Debe firmar y sellar la traducción.\n\nLuego, esa firma se legaliza en el colegio de traductores (salvo que sea traducción digital con firma digital reconocida).",
-                        links: ["https://www.traductores.org.ar"]
+                        id: "instr_trans_place",
+                        title: "📍 ¿Donde presentas?",
+                        content: "**Si presentas en consulado Argentino:**\nNecesitas Traductor Público Matriculado + Legalización Colegio de Traductores.\n\n**Si presentas en Italia (Viaje):**\nNO te sirve la traducción simple de acá. Tienes que hacer:\n\n*   Option A: *Visto Consular* (Eterno, no recomendado).\n*   Option B: *Asseverazione* (Traducir todo allá en tribunales, costoso pero seguro).\n\nPara **Asseverazione** o traducciones complejas, **Itadoc** ofrece servicio integral de validación en tribunales italianos.",
+                        links: ["https://itadoc.it"]
                     }
                 ]
             }
@@ -176,6 +181,8 @@ export const usePipelineStore = createStore<PipelineState>()(
                 const newPipeline = createStandardPipeline(data);
                 set({ pipeline: newPipeline });
             },
+
+            resetPipeline: () => set({ pipeline: null }),
 
             updateStepStatus: (stepId, status) =>
                 set((state) => {
@@ -210,11 +217,18 @@ export const usePipelineStore = createStore<PipelineState>()(
                         // Check if step should be completed
                         // Logic: All mandatory documents have an attachmentUrl
                         const allMandatoryDone = newDocs.every(d => !d.isMandatory || !!d.attachmentUrl);
+                        const hasSomeProgress = newDocs.some(d => !!d.attachmentUrl);
 
-                        // Auto-update step status if it was in_progress or pending
+                        // Auto-update step status logic:
+                        // 1. If all mandatory docs done -> Completed
+                        // 2. If not all done but has some progress and was pending -> In Progress
+
                         let newStepStatus = step.status;
+
                         if (allMandatoryDone && (step.status === 'in_progress' || step.status === 'pending')) {
                             newStepStatus = 'completed';
+                        } else if (!allMandatoryDone && hasSomeProgress && step.status === 'pending') {
+                            newStepStatus = 'in_progress';
                         }
 
                         return { ...step, documents: newDocs, status: newStepStatus };

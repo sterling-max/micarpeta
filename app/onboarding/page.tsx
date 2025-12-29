@@ -111,6 +111,11 @@ export default function OnboardingPage() {
                     onBack={prevStep}
                     icon={MapPin}
                     buttonLabel="Finalizar"
+                    onSkip={() => {
+                        updateData("consulate", "Consulado (A definir)");
+                        nextStep();
+                    }}
+                    skipLabel="No lo sé todavía"
                 />
             ),
         },
@@ -179,6 +184,8 @@ function InputStep({
     icon: Icon,
     description,
     buttonLabel = "Continuar",
+    onSkip,
+    skipLabel
 }: {
     question: string;
     placeholder: string;
@@ -189,6 +196,8 @@ function InputStep({
     icon: any;
     description?: string;
     buttonLabel?: string;
+    onSkip?: () => void;
+    skipLabel?: string;
 }) {
     return (
         <GlassCard className="py-10 px-8">
@@ -225,14 +234,25 @@ function InputStep({
                     onKeyDown={(e) => e.key === "Enter" && value && onNext()}
                 />
 
-                <Button
-                    onClick={onNext}
-                    disabled={!value}
-                    size="lg"
-                    className="w-full h-12 mt-4"
-                >
-                    {buttonLabel}
-                </Button>
+                <div className="w-full space-y-3 mt-4">
+                    <Button
+                        onClick={onNext}
+                        disabled={!value}
+                        size="lg"
+                        className="w-full h-12"
+                    >
+                        {buttonLabel}
+                    </Button>
+
+                    {onSkip && (
+                        <button
+                            onClick={onSkip}
+                            className="text-sm text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                        >
+                            {skipLabel || "Omitir"}
+                        </button>
+                    )}
+                </div>
             </div>
         </GlassCard>
     );

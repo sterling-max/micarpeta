@@ -9,7 +9,8 @@ import {
     Coffee,
     Info,
     ChevronRight,
-    Scale
+    Scale,
+    Download
 } from "lucide-react";
 import Link from "next/link";
 
@@ -31,8 +32,9 @@ export default function MenuPage() {
             ]
         },
         {
-            title: "Acerca de",
+            title: "App",
             items: [
+                { icon: Download, label: "Instalar Aplicación", href: "?install=true" }, // We will handle this param later or use a client component approach
                 { icon: Coffee, label: "Invítanos un Café", href: "/donate" },
                 { icon: Info, label: "Sobre MiCarpeta", href: "/about" },
             ]

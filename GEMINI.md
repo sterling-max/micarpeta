@@ -25,12 +25,16 @@
 - Project initialized.
 - Dependencies installed.
 - Tailwind v4 active.
+- **PWA Enabled**: Manifest, Service Worker, and Install Prompt implemented.
+- **UI Polished**: Blue "Italy" theme, cohesive iconography (Lucide FolderClosed), and responsive Landing Page.
+- **Pricing Model**: Defined as One-Time payments (€24.90 / €59.90).
 
 ## Active Tasks
 - [x] **Foundation**: Setup `globals.css` with premium theme (inter/outfit font, colors).
 - [x] **Utils**: Create `lib/utils.ts`.
 - [x] **Types**: Define core interfaces in `types/index.ts`.
-- [ ] **Landing Page**: Create premium "SPA type" landing page at root.
+- [x] **Landing Page**: Create premium "SPA type" landing page w/ Pricing.
+- [x] **PWA**: Manifest, SW, Icons, Install Prompt.
 - [ ] **Auth**: simple Login/Register UI.
 - [ ] **Onboarding**: Initial data collection flow (Wizard).
 - [x] **Navigation**: Create main layout and mobile navigation bar.

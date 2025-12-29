@@ -2,6 +2,7 @@
 
 import { usePipeline } from "@/lib/store";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { ArrowLeft, CheckCircle2, Circle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DocumentCard } from "@/components/domain/document-card";
@@ -14,10 +15,13 @@ export function StepDetailView({ stepId }: { stepId: string }) {
     const updateDocumentStatus = usePipeline((state) => state.updateDocumentStatus);
     // Also need an action to update document status, but store mock is simple for now.
 
-    if (!pipeline) {
-        router.push("/dashboard");
-        return null;
-    }
+    useEffect(() => {
+        if (!pipeline) {
+            router.push("/dashboard");
+        }
+    }, [pipeline, router]);
+
+    if (!pipeline) return null;
 
     const step = pipeline.steps.find((s) => s.id === stepId);
 
@@ -134,42 +138,59 @@ function InstructionItem({ instruction }: { instruction: Instruction }) {
     return (
         <Dialog>
             <DialogTrigger asChild>
-                <GlassCard className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer group transition-all">
+                <GlassCard className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer group transition-all border-l-4 border-l-brand-300 dark:border-l-brand-700 hover:border-l-brand-500">
                     <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <div className="w-10 h-10 rounded-full bg-brand-100 dark:bg-brand-900/50 text-brand-600 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
                             <Lightbulb size={20} />
                         </div>
                         <div className="text-left">
-                            <h3 className="font-semibold text-slate-900 dark:text-slate-100">{instruction.title}</h3>
+                            <h3 className="font-semibold text-slate-900 dark:text-slate-100 group-hover:text-brand-600 transition-colors">{instruction.title}</h3>
                             <p className="text-xs text-slate-500">Ver instructivo</p>
                         </div>
                     </div>
-                    <Button size="sm" variant="ghost">Abrir</Button>
+                    <Button size="sm" variant="ghost" className="text-brand-600">Abrir</Button>
                 </GlassCard>
             </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>{instruction.title}</DialogTitle>
-                </DialogHeader>
-                <div className="mt-4 space-y-4">
-                    <div className="prose dark:prose-invert text-sm max-w-none text-slate-600 dark:text-slate-300 whitespace-pre-line">
-                        {instruction.content}
+            <DialogContent className="p-0 overflow-hidden sm:max-w-[500px] border-none shadow-2xl bg-white dark:bg-slate-900">
+                {/* Custom Header */}
+                <div className="bg-gradient-to-r from-brand-600 to-brand-500 p-6 text-white relative overflow-hidden">
+                    <div className="absolute right-0 top-0 opacity-10 transform translate-x-1/3 -translate-y-1/3">
+                        <Lightbulb size={140} />
+                    </div>
+                    <DialogTitle className="text-xl font-bold relative z-10 flex items-center gap-2">
+                        {instruction.title}
+                    </DialogTitle>
+                    <p className="text-brand-100 text-sm mt-1 relative z-10 opacity-90">Guía práctica</p>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    <div className="prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-300">
+                        {instruction.content.split('\n').map((line, i) => (
+                            <p key={i} className={line.startsWith('**') ? "font-bold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/30 p-3 rounded-lg border border-brand-100 dark:border-brand-800" : ""}>
+                                {line.replace(/\*\*/g, '')}
+                            </p>
+                        ))}
                     </div>
 
                     {instruction.links && instruction.links.length > 0 && (
-                        <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                            <h4 className="text-xs font-bold uppercase text-slate-400 mb-2">Enlaces útiles</h4>
-                            {instruction.links.map((link, i) => (
-                                <a
-                                    key={i}
-                                    href={link}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-2 text-brand-600 hover:underline text-sm"
-                                >
-                                    <ExternalLink size={14} /> {link}
-                                </a>
-                            ))}
+                        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 border border-slate-100 dark:border-slate-800">
+                            <h4 className="text-xs font-bold uppercase text-slate-400 mb-3 flex items-center gap-2">
+                                <ExternalLink size={12} /> Recursos recomendados
+                            </h4>
+                            <div className="space-y-2">
+                                {instruction.links.map((link, i) => (
+                                    <a
+                                        key={i}
+                                        href={link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-between p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-brand-300 hover:shadow-sm transition-all text-sm group"
+                                    >
+                                        <span className="truncate flex-1 font-medium text-slate-700 dark:text-slate-200">{link.replace('https://', '')}</span>
+                                        <ExternalLink size={14} className="text-slate-400 group-hover:text-brand-500" />
+                                    </a>
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>

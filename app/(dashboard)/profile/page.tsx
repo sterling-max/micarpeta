@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from "@/lib/auth";
+import { usePipeline } from "@/lib/store";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { User, Mail, LogOut, Settings, Moon, Globe } from "lucide-react";
@@ -9,11 +10,19 @@ import { useRouter } from "next/navigation";
 export default function ProfilePage() {
     const user = useAuth((state) => state.user);
     const logout = useAuth((state) => state.logout);
+    const resetPipeline = usePipeline((state) => state.resetPipeline);
     const router = useRouter();
 
     const handleLogout = () => {
         logout();
         router.push("/login");
+    };
+
+    const handleReset = () => {
+        if (confirm("¿Estás seguro? Esto borrará tu progreso actual y deberás comenzar de nuevo. (Útil para pruebas)")) {
+            resetPipeline();
+            router.push("/onboarding");
+        }
     };
 
     if (!user) {
@@ -66,6 +75,10 @@ export default function ProfilePage() {
                     </div>
                 </div>
             </GlassCard>
+
+            <Button variant="outline" className="w-full border-red-200 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={handleReset}>
+                <Settings className="w-4 h-4 mr-2" /> Resetear Trámite (Dev)
+            </Button>
 
             <Button variant="destructive" className="w-full" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" /> Cerrar Sesión

@@ -1,15 +1,16 @@
 "use client";
 
-import { Home, FileText, User, Menu } from "lucide-react";
+import { Home, FileText, User, Menu, Map, Shield } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-    { label: "Pipeline", icon: Home, href: "/dashboard" },
-    { label: "Documentos", icon: FileText, href: "/documents" },
-    { label: "Perfil", icon: User, href: "/profile" },
-    { label: "Menu", icon: Menu, href: "/menu" },
+    { label: "Inicio", icon: Home, href: "/dashboard" },
+    { label: "Trámite", icon: Map, href: "/pipeline" },
+    { label: "Mis Docs", icon: FileText, href: "/documents" },
+    { label: "Privacidad", icon: Shield, href: "/privacy" },
+    { label: "Menú", icon: Menu, href: "/menu" },
 ];
 
 export function MobileNav() {

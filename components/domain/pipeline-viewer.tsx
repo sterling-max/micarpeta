@@ -34,15 +34,6 @@ export function PipelineViewer() {
 
     return (
         <div className="space-y-4">
-            <header className="mb-6">
-                <h1 className="text-2xl font-bold font-sans text-balance">
-                    {pipeline.name}
-                </h1>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">
-                    Versión {pipeline.version}
-                </p>
-            </header>
-
             <div className="relative space-y-12 pl-4 before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-slate-200 before:to-transparent dark:before:via-slate-800">
                 {pipeline.steps.map((step, index) => (
                     <PipelineStepCard key={step.id} step={step} index={index} />
@@ -118,16 +109,24 @@ function PipelineStepCard({ step, index }: { step: any; index: number }) {
                     <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                         {step.description}
                     </p>
-
-                    {/* Progress Bar (Mock) */}
+                    {/* Progress Bar */}
                     {isCurrent && (
                         <div className="mt-4 h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                             <motion.div
                                 className="h-full bg-brand-500"
                                 initial={{ width: 0 }}
-                                animate={{ width: "33%" }}
-                                transition={{ duration: 1, delay: 0.5 }}
+                                animate={{ width: `${(step.documents.filter((d: any) => !!d.attachmentUrl).length / Math.max(step.documents.length, 1)) * 100}%` }}
+                                transition={{ duration: 0.5 }}
                             />
+                        </div>
+                    )}
+
+                    {/* Documents Counter */}
+                    {step.documents.length > 0 && (
+                        <div className="mt-2 flex items-center justify-end">
+                            <span className="text-[10px] items-center font-medium text-slate-400">
+                                {step.documents.filter((d: any) => !!d.attachmentUrl).length}/{step.documents.length} docs
+                            </span>
                         </div>
                     )}
                 </GlassCard>
